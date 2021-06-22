@@ -2,8 +2,6 @@
 /**
  * Gerencianet Integration Class.
  */
-
-include_once('gerencianet/autoload.php');
 use Gerencianet\Exception\GerencianetException;
 use Gerencianet\Gerencianet;
 

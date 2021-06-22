@@ -1,8 +1,8 @@
 <?php
 define('BASE_DIR', dirname(dirname(dirname(__FILE__))) . '/');
 
-include BASE_DIR . 'modules/gateways/gerencianet_lib/Gerencianet_WHMCS_Interface.php';
-include BASE_DIR . 'modules/gateways/gerencianet_lib/GerencianetIntegration.php';
+include BASE_DIR . 'modules/gateways/gerencianet/gerencianet_lib/Gerencianet_WHMCS_Interface.php';
+include BASE_DIR . 'modules/gateways/gerencianet/gerencianet_lib/GerencianetIntegration.php';
 
 /**
  * Gerencianet Hook Calls
@@ -13,10 +13,10 @@ include BASE_DIR . 'modules/gateways/gerencianet_lib/GerencianetIntegration.php'
 function getChargeId($vars, $credentials)
 {
     $invoiceid          = $vars['invoiceid'];
-    $clientIDProd       = $credentials['clientIDProd'];
+    $clientIdProd       = $credentials['clientIdProd'];
     $clientSecretProd   = $credentials['clientSecretProd'];
-    $clientIDDev        = $credentials['clientIDDev'];
-    $clientSecretDev    = $credentials['clientSecretDev'];
+    $clientIdSandbox        = $credentials['clientIdSandbox'];
+    $clientSecretSandbox    = $credentials['clientSecretSandbox'];
     $adminWHMCS         = $credentials['whmcsAdmin'];
     $idConta            = $credentials['idConta'];
     $configSandbox      = false;
@@ -27,7 +27,7 @@ function getChargeId($vars, $credentials)
     $transactionData                    = localAPI("gettransactions", $getTransactionValues, $adminWHMCS);
     $totalTransactions                  = $transactionData['totalresults'];
 
-    $gnIntegration = new GerencianetIntegration($clientIDProd, $clientSecretProd, $clientIDDev, $clientSecretDev, $configSandbox, $idConta);
+    $gnIntegration = new GerencianetIntegration($clientIdProd, $clientSecretProd, $clientIdSandbox, $clientSecretSandbox, $configSandbox, $idConta);
     $finalChargeId = 0;
     $expire_at = '';
 
@@ -73,7 +73,7 @@ function gerencianetUpdateBillet($vars)
     $status                     = $invoiceData['status'];
     $paymentmethod              = $invoiceData['paymentmethod'];
 
-    if ($status != "Paid" && $paymentmethod == "gerencianetcharge") {
+    if ($status != "Paid" && $paymentmethod == "gerencianet") {
         $credentials    = get_admin_credentials();
         $numDiasParaVencimento = $credentials['numDiasParaVencimento'];
 

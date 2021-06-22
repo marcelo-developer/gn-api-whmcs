@@ -10,7 +10,7 @@ if (version_compare(PHP_VERSION, '5.4.39') < 0)
 
 include_once '../gerencianet_lib/GerencianetIntegration.php';
 
-$gatewayModuleName = 'gerencianetcharge';
+$gatewayModuleName = 'gerencianet';
 $gatewayParams = getGatewayVariables($gatewayModuleName);
 
 if (!$gatewayParams['type']) {
@@ -22,10 +22,10 @@ if (!isset($_POST['notification'])) {
 }
 
 $notificationToken  = $_POST['notification'];
-$clientIDProd       = $gatewayParams['clientIDProd'];
+$clientIdProd       = $gatewayParams['clientIdProd'];
 $clientSecretProd   = $gatewayParams['clientSecretProd'];
-$clientIDDev        = $gatewayParams['clientIDDev'];
-$clientSecretDev    = $gatewayParams['clientSecretDev'];
+$clientIdSandbox        = $gatewayParams['clientIdSandbox'];
+$clientSecretSandbox    = $gatewayParams['clientSecretSandbox'];
 $configSandbox      = $gatewayParams['configSandbox'];
 $configDebug        = $gatewayParams['configDebug'];
 $idConta            = $gatewayParams['idConta'];
@@ -33,7 +33,7 @@ $descontoBoleto     = (double)$gatewayParams['descontoBoleto'];
 $discountType       = $gatewayParams['tipoDesconto'];
 $adminWHMCS         = $gatewayParams['whmcsAdmin'];
 
-$gnIntegration = new GerencianetIntegration($clientIDProd, $clientSecretProd, $clientIDDev, $clientSecretDev, $configSandbox, $idConta);
+$gnIntegration = new GerencianetIntegration($clientIdProd, $clientSecretProd, $clientIdSandbox, $clientSecretSandbox, $configSandbox, $idConta);
 $notificationJson = $gnIntegration->notificationCheck($notificationToken);
 $notification = json_decode($notificationJson, true);
 
@@ -102,7 +102,7 @@ if ($status == "paid")
         $addInvoicePaymentValues["invoiceid"]   = (int)$invoiceId;
         $addInvoicePaymentValues["transid"]     = (string)$transactionId;
         $addInvoicePaymentValues["amount"]      = (string)$amount;
-        $addInvoicePaymentValues["gateway"]     = "gerencianetcharge";
+        $addInvoicePaymentValues["gateway"]     = "gerencianet";
 
         $results = localAPI($addInvoicePaymentCommand, $addInvoicePaymentValues, $adminWHMCS);
 

@@ -1,5 +1,9 @@
 <?php
-include_once 'gerencianet_lib/Gerencianet_WHMCS_Interface.php';
+require 'gerencianet/gerencianet-sdk/autoload.php';
+include_once 'gerencianet/gerencianet_lib/GerencianetValidation.php';
+include_once 'gerencianet/gerencianet_lib/GerencianetIntegration.php';
+include_once 'gerencianet/gerencianet_lib/functions/boleto/gateway_functions.php';
+include_once 'gerencianet/gerencianet_lib/Gerencianet_WHMCS_Interface.php';
 
 function gerencianetcharge_config()
 {
@@ -9,7 +13,7 @@ function gerencianetcharge_config()
             "Value"     => "Gerencianet via Boleto"
         ),
 
-        "clientIDProd"      => array(
+        "clientIdProd"      => array(
             "FriendlyName"  => "Client_Id Produção (*)",
             "Type"          => "text",
             "Size"          => "50",
@@ -23,14 +27,14 @@ function gerencianetcharge_config()
             "Description"   => " (preenchimento obrigatório)",
         ),
 
-        "clientIDDev"       => array(
+        "clientIdSandbox"       => array(
             "FriendlyName"  => "Client_Id Desenvolvimento (*)",
             "Type"          => "text",
             "Size"          => "50",
             "Description"   => " (preenchimento obrigatório)",
         ),
 
-        "clientSecretDev"   => array(
+        "clientSecretSandbox"   => array(
             "FriendlyName"  => "Client_Secret Desenvolvimento (*)",
             "Type"          => "text",
             "Size"          => "54",
@@ -138,34 +142,22 @@ function gerencianetcharge_link($params)
 
     /* ***************************************************** Includes e captura do invoice **************************************** */
 
-    include_once 'gerencianet_lib/GerencianetIntegration.php';
-    include_once 'gerencianet_lib/GerencianetValidation.php';
-
     $invoiceId   = $params['invoiceid'];
     $urlCallback = $params['systemurl'] . 'modules/gateways/callback/gerencianetcharge.php';
 
     /* ************************************************ Define mensagens de erro ***************************************************/
 
-    $validations   = new GerencianetValidation();
-    $errorMessages = array();
 
-    define("NAME_ERROR_MESSAGE", "Nome Inválido: O nome é muito curto. Você deve digitar seu nome completo.");
-    define("EMAIL_ERROR_MESSAGE", "Email Inválido: O email informado é inválido ou não existe.");
-    define("BIRTHDATE_ERROR_MESSAGE", "Data de nascimento Inválida: A data de nascimento informada deve seguir o padrão Ano-mes-dia.");
-    define("PHONENUMBER_ERROR_MESSAGE", "Telefone Inválido: O telefone informado não existe ou o DDD está incorreto.");
-    define("DOCUMENT_NULL_ERROR_MESSAGE", "Documento Nulo: O campo referente à CPF e/ou CNPJ não existe ou não está preenchido.");
-    define("CPF_ERROR_MESSAGE", "Documento Inválido: O número do CPF do cliente é invalido.");
-    define("CNPJ_ERROR_MESSAGE", "Documento Inválido: O número do CNPJ do cliente é invalido.");
-    define("CORPORATE_ERROR_MESSAGE", "Razão Social Inválida: O nome da empresa é inválido. Você deve digitar no campo \"Empresa\" de seu WHMCS o nome que consta na Receita Federal.");
-    define("CORPORATE_NULL_ERROR_MESSAGE", "Razao Social Nula: O campo \"Empresa\" de seu WHMCS não está preenchido.");
-    define("INTEGRATION_ERROR_MESSAGE", "Erro Inesperado: Ocorreu um erro inesperado. Entre em contato com o responsável do WHMCS.");
+    $errorMessages = array();
+    $errorMessages = validationParams($params);
+
 
     /* ******************************************** Gateway Configuration Parameters ******************************************* */
 
-    $clientIDProd           = $params['clientIDProd'];
+    $clientIdProd           = $params['clientIdProd'];
     $clientSecretProd       = $params['clientSecretProd'];
-    $clientIDDev            = $params['clientIDDev'];
-    $clientSecretDev        = $params['clientSecretDev'];
+    $clientIdSandbox            = $params['clientIdSandbox'];
+    $clientSecretSandbox        = $params['clientSecretSandbox'];
     $idConta                = $params['idConta'];
     $descontoBoleto         = $params['descontoBoleto'];
     $tipoDesconto           = $params['tipoDesconto'];
@@ -181,6 +173,7 @@ function gerencianetcharge_link($params)
     $billetMessage          = $params['message'];
     $adminWHMCS             = $params['whmcsAdmin'];
 
+
     if ($adminWHMCS == '' || $adminWHMCS == null) {
         array_push($errorMessages, INTEGRATION_ERROR_MESSAGE);
         if ($configDebug == "on")
@@ -190,7 +183,7 @@ function gerencianetcharge_link($params)
 
     /* ***************************** Verifica se já existe um boleto para o pedido em questão *********************************** */
 
-    $gnIntegration = new GerencianetIntegration($clientIDProd, $clientSecretProd, $clientIDDev, $clientSecretDev, $configSandbox, $idConta);
+    $gnIntegration = new GerencianetIntegration($clientIdProd, $clientSecretProd, $clientIdSandbox, $clientSecretSandbox, $configSandbox, $idConta);
 
     $getTransactionValues['invoiceid']  = $invoiceId;
     $transactionData                    = localAPI("gettransactions", $getTransactionValues, $adminWHMCS);
@@ -248,15 +241,15 @@ function gerencianetcharge_link($params)
         $valueDiscountWHMCS      = 0;
         $percentageDiscountWHMCS = 0;
         $invoiceItems = $invoiceData['items']['item'];
-        $invoiceTax   = (double)$invoiceData['tax'];
-        $invoiceTax2  = (double)$invoiceData['tax2'];
+        $invoiceTax   = (float)$invoiceData['tax'];
+        $invoiceTax2  = (float)$invoiceData['tax2'];
 
         $totalItem     = 0;
         $totalTaxes    = 0;
         $items = array();
 
         foreach ($invoiceItems as $invoiceItem) {
-            if ((double)$invoiceItem['amount'] > 0) {
+            if ((float)$invoiceItem['amount'] > 0) {
                 $itemValue = number_format($invoiceItem['amount'], 2, '.', '');
                 $itemValue = preg_replace("/[.,-]/", "", $itemValue);
                 $item = array(
@@ -265,14 +258,14 @@ function gerencianetcharge_link($params)
                     'value'  => (int)$itemValue
                 );
                 array_push($items, $item);
-                $totalItem += (double)$invoiceItem['amount'];
+                $totalItem += (float)$invoiceItem['amount'];
             } else {
-                $valueDiscountWHMCS += (double)$invoiceItem['amount'];
+                $valueDiscountWHMCS += (float)$invoiceItem['amount'];
             }
         }
 
         if ($invoiceTax > 0) {
-            $totalTaxes += (double)$invoiceTax;
+            $totalTaxes += (float)$invoiceTax;
             $item = array(
                 'name'   => 'Taxa 1: Taxa adicional do WHMCS',
                 'amount' => 1,
@@ -282,7 +275,7 @@ function gerencianetcharge_link($params)
         }
 
         if ($invoiceTax2 > 0) {
-            $totalTaxes += (double)$invoiceTax2;
+            $totalTaxes += (float)$invoiceTax2;
             $item = array(
                 'name'   => 'Taxa 2: Taxa adicional do WHMCS',
                 'amount' => 1,
@@ -301,20 +294,20 @@ function gerencianetcharge_link($params)
 
         $discount = false;
         $discountWHMCS = 0;
-        $invoiceCredit = (int)(number_format((double)$invoiceData['credit'], 2, '.', '') * 100);
+        $invoiceCredit = (int)(number_format((float)$invoiceData['credit'], 2, '.', '') * 100);
 
-        $descontoBoleto = number_format((double)$descontoBoleto, 2, '.', '');
+        $descontoBoleto = number_format((float)$descontoBoleto, 2, '.', '');
 
         if ($tipoDesconto == '1')
-            $discounGerencianet         = ((double)$descontoBoleto / 100) * $totalItem;
+            $discounGerencianet         = ((float)$descontoBoleto / 100) * $totalItem;
         else
-            $discounGerencianet  = (double)$descontoBoleto;
+            $discounGerencianet  = (float)$descontoBoleto;
 
         $discounGerencianetFormated = number_format($discounGerencianet, 2, '.', '');
-        $discounGerencianetinCents  = (double)$discounGerencianetFormated * 100;
+        $discounGerencianetinCents  = (float)$discounGerencianetFormated * 100;
         $discountValue = $discounGerencianetinCents + $valueDiscountWHMCSinCents + $invoiceCredit;
 
-        $discountInReals = (double)$discounGerencianetFormated + (double)$valueDiscountWHMCSFormated + (double)$invoiceData['credit'];
+        $discountInReals = (float)$discounGerencianetFormated + (float)$valueDiscountWHMCSFormated + (float)$invoiceData['credit'];
 
         if ($discountValue > 0)
             $discount = array(
@@ -322,76 +315,9 @@ function gerencianetcharge_link($params)
                 'value' => (int)$discountValue
             );
 
-        $invoiceTotalInReals = (double)$totalItem - $discountInReals + $totalTaxes;
+        $invoiceTotalInReals = (float)$totalItem - $discountInReals + $totalTaxes;
 
-        /* ********************************************* Coleta os dados do cliente ************************************************* */
-
-        $clientId         = $params['clientdetails']['id'];
-        $document         = preg_replace("/[^0-9]/", "", get_custom_field_value((string)"CPF/CNPJ", $clientId));
-        $corporateName    = $params['clientdetails']['companyname'];
-
-        $name  = $params['clientdetails']['firstname'] . ' ' . $params['clientdetails']['lastname'];
-        $phone = preg_replace('/[^0-9]/', '', $params['clientdetails']['phonenumber']);
-        $email = $params['clientdetails']['email'];
-
-        if ($document == null || $document == '')
-            array_push($errorMessages, DOCUMENT_NULL_ERROR_MESSAGE);
-        else {
-            if (strlen($document) <= 11) {
-                $isJuridica = false;
-                if (!$validations->_cpf($document))
-                    array_push($errorMessages, CPF_ERROR_MESSAGE);
-                if (!$validations->_name($name))
-                    array_push($errorMessages, NAME_ERROR_MESSAGE);
-            } else {
-                $isJuridica = true;
-                if (!$validations->_cnpj($document))
-                    array_push($errorMessages, CNPJ_ERROR_MESSAGE);
-                if ($corporateName == null || $corporateName == '')
-                    array_push($errorMessages, CORPORATE_NULL_ERROR_MESSAGE);
-                elseif (!$validations->_corporate($corporateName))
-                    array_push($errorMessages, CORPORATE_ERROR_MESSAGE);
-            }
-        }
-
-        if (!$validations->_phone_number($phone))
-            array_push($errorMessages, PHONENUMBER_ERROR_MESSAGE);
-
-        if (!$validations->_email($email))
-            array_push($errorMessages, EMAIL_ERROR_MESSAGE);
-
-        if ($isJuridica == false) {
-            if ($sendEmailGN == "on")
-                $customer = array(
-                    'name'          => $name,
-                    'cpf'           => (string)$document,
-                    'email'         => $email,
-                    'phone_number'  => $phone
-                );
-            else
-                $customer = array(
-                    'name'          => $name,
-                    'cpf'           => (string)$document,
-                    'phone_number'  => $phone
-                );
-        } else {
-            $juridical_data = array(
-                'corporate_name' => (string)$corporateName,
-                'cnpj'           => (string)$document
-            );
-
-            if ($sendEmailGN == "on")
-                $customer = array(
-                    'email'             => $email,
-                    'phone_number'      => $phone,
-                    'juridical_person'  => $juridical_data
-                );
-            else
-                $customer = array(
-                    'phone_number'      => $phone,
-                    'juridical_person'  => $juridical_data
-                );
-        }
+        
 
         /* *********************************************** Multa, juros e observação no boleto ******************************************** */
 
@@ -406,7 +332,9 @@ function gerencianetcharge_link($params)
         $interestValue  = (int)preg_replace("/[.,-]/", "", $interestValue);
 
         /* ******************************************************* Gera a charge e o boleto ************************************************ */
+        
         if (empty($errorMessages)) {
+            $customer = getClientVariables($params);
             $permitionToPay = true;
             $resultCheck = array();
 

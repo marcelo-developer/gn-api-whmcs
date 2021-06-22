@@ -39,8 +39,8 @@ function get_admin_credentials()
     for($i=0; $i<count($response); $i++){
         $name = $response[$i]["setting"];
         $value = $response[$i]["value"];
-        if($name == "clientIDProd" || $name == "clientSecretProd" || $name == "clientIDDev" || $name == "numDiasParaVencimento" ||
-            $name == "clientSecretDev" || $name == "idConta" ||  $name == "configSandbox" || $name == "whmcsAdmin")
+        if($name == "clientIdProd" || $name == "clientSecretProd" || $name == "clientIdSandbox" || $name == "numDiasParaVencimento" ||
+            $name == "clientSecretSandbox" || $name == "idConta" ||  $name == "configSandbox" || $name == "whmcsAdmin")
             $credentials[$name] = $value;
     }
 
@@ -82,7 +82,7 @@ function extra_amounts_Gerencianet_WHMCS($invoiceId, $descontoBoleto, $discountT
         'amount'        => $amount,
         'taxed'         => 0,
         'duedate'       => $duedate,
-        'paymentmethod' => 'gerencianetcharge'
+        'paymentmethod' => 'gerencianet'
     );
 
     insertCob('tblinvoiceitems', $dataDiscount);
@@ -138,7 +138,7 @@ function buttonGerencianet($errorMessages=null, $link=null, $discount=0, $discou
     $src = '<style>
         .botao {
             background-color: #f26522;
-            background-image:url("modules/gateways/gerencianet_lib/images/gn-cinza.png");
+            background-image:url("modules/gateways/gerencianet/gerencianet_lib/images/gn-cinza.png");
             background-size: 35px;
             background-repeat: no-repeat;
             background-position-x: 10px;
@@ -152,7 +152,7 @@ function buttonGerencianet($errorMessages=null, $link=null, $discount=0, $discou
         }
         .botao:hover {
             background-color: #ff751a;
-            background-image:url("modules/gateways/gerencianet_lib/images/gn-cinza.png");
+            background-image:url("modules/gateways/gerencianet/gerencianet_lib/images/gn-cinza.png");
             background-size: 35px;
             background-repeat: no-repeat;
             color: white;
@@ -176,7 +176,7 @@ function buttonGerencianet($errorMessages=null, $link=null, $discount=0, $discou
 
     if($errorMessages != null)
     {
-        $src .= '<form action="modules/gateways/gerencianet_lib/gerencianet_errors.php" method="post">';
+        $src .= '<form action="modules/gateways/gerencianet/gerencianet_lib/gerencianet_errors.php" method="post">';
         foreach ($errorMessages as $error) {
             $src = $src . '<input type="hidden" name="errors[]" value="' . $error . '"></input>';
         }
@@ -210,7 +210,7 @@ function buttonGerencianet($errorMessages=null, $link=null, $discount=0, $discou
 
 function send_errors($errorMessages)
 {
-    $url = 'modules/gateways/gerencianet_lib/gerencianet_errors.php';
+    $url = 'modules/gateways/gerencianet/gerencianet_lib/gerencianet_errors.php';
     
     $code = "<script>
     var form = document.createElement('form');
