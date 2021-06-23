@@ -3,12 +3,12 @@
 require_once __DIR__ . '/../../../init.php';
 require_once __DIR__ . '/../../../includes/gatewayfunctions.php';
 require_once __DIR__ . '/../../../includes/invoicefunctions.php';
-include_once '../gerencianet_lib/Gerencianet_WHMCS_Interface.php';
+include_once '../gerencianet/gerencianet_lib/Gerencianet_WHMCS_Interface.php';
 
-if (version_compare(PHP_VERSION, '5.4.39') < 0) 
+if (version_compare(PHP_VERSION, '7.3') < 0) 
     die();
 
-include_once '../gerencianet_lib/GerencianetIntegration.php';
+include_once '../gerencianet/gerencianet_lib/GerencianetIntegration.php';
 
 $gatewayModuleName = 'gerencianet';
 $gatewayParams = getGatewayVariables($gatewayModuleName);

@@ -31,7 +31,7 @@ function get_admin_credentials()
     $table    = "tblpaymentgateways";
     $fields    = "*";
      $where     = array(
-        "gateway" => "gerencianetcharge"
+        "gateway" => "gerencianet"
     );
 
     $credentials = array();
